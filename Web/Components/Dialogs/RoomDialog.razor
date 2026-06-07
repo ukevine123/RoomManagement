@@ -1,0 +1,122 @@
+@using Application.DTO
+@using Application.Services.RoomCategoryService
+@using Application.Services.RoomService
+@using Domain.Entities
+@inject IRoomService RoomService
+@inject IRoomCategoryService RoomCategoryService
+@inject ISnackbar Snackbar
+
+<MudDialog Style="max-width: 500px; width: 100%; border-radius: 12px;">
+    <TitleContent>
+        <div class="d-flex align-center justify-space-between width-100">
+            <MudText Typo="Typo.h6" Class="font-weight-bold">New Room</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Medium" OnClick="Cancel" />
+        </div>
+    </TitleContent>
+    
+    <DialogContent>
+        <MudForm @ref="_form" Class="d-flex flex-column gap-4 pt-2">
+            
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Room Code</MudText>
+                <MudTextField @bind-Value="Model.RoomCode" 
+                              Variant="Variant.Outlined" 
+                              Margin="Margin.Dense" 
+                              Placeholder="e.g., R-101"
+                              FullWidth="true" />
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Maximum Occupancy</MudText>
+                <MudNumericField Variant="Variant.Outlined" 
+                                  Margin="Margin.Dense" @bind-Value="Model.MaximumOccupancy" 
+                                  HideSpinButtons="true" Min="1" />
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Status</MudText>
+                <MudSelect T="string" @bind-Value="Model.Status" Variant="Variant.Outlined" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem Value="@("Available")">Available</MudSelectItem>
+                    <MudSelectItem Value="@("Occupied")">Occupied</MudSelectItem>
+                    <MudSelectItem Value="@("Maintenance")">Maintenance</MudSelectItem>
+                </MudSelect>
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Room Category</MudText>
+                <MudSelect T="int" @bind-Value="Model.RoomCategoryId" Variant="Variant.Outlined" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter" Placeholder="Select Category">
+                    @foreach (var category in _categories)
+                    {
+                        <MudSelectItem Value="@category.Id">@category.Name (@category.PricePerDay.ToString("C") / Day)</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+
+        </MudForm>
+    </DialogContent>
+    
+    <DialogActions>
+        <div class="d-flex justify-end gap-3 width-100 pa-4 pt-0">
+            <MudButton Variant="Variant.Outlined" 
+                       OnClick="Cancel" 
+                       Style="text-transform: none; border-radius: 8px; border: 1px solid #E5E7EB; color: #1F2937;" 
+                       Class="px-5 font-weight-bold">
+                Cancel
+            </MudButton>
+            
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       OnClick="Submit" 
+                       Style="text-transform: none; border-radius: 8px; background-color: #2563EB;" 
+                       Class="px-5 font-weight-bold">
+                Create Room
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public CreateRoomDTO Model { get; set; } = new() { Status = "Available", MaximumOccupancy = 2 };
+
+    private MudForm _form = default!;
+    private List<RoomCategory> _categories = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await RoomCategoryService.GetAllAsync();
+        if (_categories.Any() && Model.RoomCategoryId == 0)
+        {
+            Model.RoomCategoryId = _categories.First().Id;
+        }
+    }
+
+    private async Task Submit()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(Model.RoomCode))
+            {
+                Snackbar.Add("Room code is required.", Severity.Warning);
+                return;
+            }
+
+            if (Model.RoomCategoryId <= 0)
+            {
+                Snackbar.Add("Please select a room category.", Severity.Warning);
+                return;
+            }
+
+            await RoomService.CreateRoomAsync(Model);
+            Snackbar.Add("Room created successfully!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving room: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

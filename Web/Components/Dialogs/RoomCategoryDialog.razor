@@ -1,0 +1,101 @@
+@using Application.DTO
+@using Application.Interface
+@using Application.Services.RoomCategoryService
+@using Domain.Entities
+@inject IRoomCategoryService RoomCategoryService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudDialog Style="max-width: 500px; width: 100%; border-radius: 12px;">
+    <TitleContent>
+        <div class="d-flex align-center justify-space-between width-100">
+            <MudText Typo="Typo.h6" Class="font-weight-bold">New Category</MudText>
+            @* <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Medium" OnClick="Cancel" /> *@
+        </div>
+    </TitleContent>
+    
+    <DialogContent>
+        <MudForm @ref="_form" Class="d-flex flex-column gap-4 pt-2">
+            
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Category name</MudText>
+                <MudTextField @bind-Value="Model.Name" 
+                              Variant="Variant.Outlined" 
+                              Margin="Margin.Dense" 
+                              Placeholder="e.g., VIP"
+                              FullWidth="true" />
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Description</MudText>
+                <MudTextField @bind-Value="Model.Description" 
+                              Variant="Variant.Outlined" 
+                              Margin="Margin.Dense" 
+                              Placeholder="e.g., Room category for VIP guests"
+                              FullWidth="true" />
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Price per day (RWF)</MudText>
+                <MudNumericField Variant="Variant.Outlined" 
+                                 Margin="Margin.Dense" @bind-Value="Model.PricePerDay" 
+                                 HideSpinButtons="true" Adornment="Adornment.Start" AdornmentText="Frw" />
+            </div>
+
+        </MudForm>
+    </DialogContent>
+    
+    <DialogActions>
+        <div class="d-flex justify-end gap-3 width-100 pa-4 pt-0">
+            <MudButton Variant="Variant.Outlined" 
+                       OnClick="Cancel" 
+                       Style="text-transform: none; border-radius: 8px; border: 1px solid #E5E7EB; color: #1F2937;" 
+                       Class="px-5 font-weight-bold">
+                Cancel
+            </MudButton>
+            
+            <MudButton Variant="Variant.Filled" 
+                        
+                       OnClick="Submit" 
+                       Style="text-transform: none; border-radius: 8px; background-color: #e3a387;" 
+                       Class="px-5 font-weight-bold">
+                Create Category
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public CreateRoomCategoryDTO Model { get; set; } = new();
+    [Parameter] public bool IsReadOnly { get; set; } = false;
+
+    private MudForm _form = default!;
+
+    // ... your existing variables (Model, _provinces, etc.) ...
+
+    private async Task Submit()
+    {
+        try
+     {
+
+            // 2. Call your Repository/Service
+            // This matches the CreateRoomCategoryAsync method in your RoomCategoryRepository
+            await RoomCategoryService.CreateRoomCategoryAsync(Model);
+
+            // 3. Success Feedback
+            Snackbar.Add("Room category created successfully!", Severity.Success);
+
+            // 4. Close the Dialog and pass 'true' back to the main page to trigger a refresh
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            // 5. Error Handling
+            Snackbar.Add($"Error saving room category: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

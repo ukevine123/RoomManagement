@@ -1,0 +1,121 @@
+@page "/guests"
+@rendermode InteractiveServer
+@using Application.Services.GuestService
+@using Entity = Domain.Entities
+@using RoomManagement.Components.Dialogs
+
+@inject IGuestService GuestService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudGrid Class="align-center mb-3" Spacing="2">
+        <MudItem xs="12" sm="6" md="4">
+            <MudTextField @bind-Value="_searchString" 
+                           Placeholder="Search by name, email, phone, or address..." 
+                           Adornment="Adornment.Start" 
+                           AdornmentIcon="@Icons.Material.Filled.Search" 
+                           IconSize="Size.Small" 
+                           Variant="Variant.Outlined" 
+                           Margin="Margin.Dense" 
+                           Class="bg-white" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="8" Class="d-flex justify-sm-end gap-2">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.FilterList" Size="Size.Small" Color="Color.Default">Filter</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Layers" Size="Size.Small" Color="Color.Default">Group by</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.FileDownload" Size="Size.Small" Color="Color.Default">Import</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" Size="Size.Small" Color="Color.Default" OnClick="LoadData">Refresh</MudButton>
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenCreateDialog">
+                Add New
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+
+    <MudTable Items="@_guests" Filter="new Func<Entity.Guest, bool>(FilterFunc)" Hover="true" Dense="true" Elevation="1" Class="rounded-lg">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entity.Guest, object>(x => x.FullName)">Full Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entity.Guest, object>(x => x.Email)">Email</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entity.Guest, object>(x => x.Phone)">Phone</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entity.Guest, object>(x => x.Sex)">Sex</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entity.Guest, object>(x => x.Address)">Address</MudTableSortLabel></MudTh>
+            <MudTh>Actions</MudTh>
+            <MudTh Style="width: 50px;"></MudTh> 
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Full Name" Class="font-weight-medium">@context.FullName</MudTd>
+            <MudTd DataLabel="Email">@context.Email</MudTd>
+            <MudTd DataLabel="Phone">@context.Phone</MudTd>
+            <MudTd DataLabel="Sex">
+                @if (context.Sex == "Male")
+                {
+                    <MudChip T="string" Color="Color.Info" Variant="Variant.Text" Size="Size.Small" Style="background-color: #E0F2FE; color: #0369A1;" Class="px-3 py-1 rounded font-weight-bold">
+                        Male
+                    </MudChip>
+                }
+                else if (context.Sex == "Female")
+                {
+                    <MudChip T="string" Color="Color.Secondary" Variant="Variant.Text" Size="Size.Small" Style="background-color: #FCE7F3; color: #BE185D;" Class="px-3 py-1 rounded font-weight-bold">
+                        Female
+                    </MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Default" Variant="Variant.Text" Size="Size.Small" Style="background-color: #F3F4F6; color: #374151;" Class="px-3 py-1 rounded font-weight-bold">
+                        @context.Sex
+                    </MudChip>
+                }
+            </MudTd>
+            <MudTd DataLabel="Address">@context.Address</MudTd>
+            <MudTd>
+                <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" Size="Size.Small" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopRight">
+                    <MudMenuItem>View Details</MudMenuItem>
+                    <MudMenuItem>Edit</MudMenuItem>
+                    <MudMenuItem Style="color: var(--mud-palette-error);">Delete</MudMenuItem>
+                </MudMenu>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private List<Entity.Guest> _guests = new();
+    private string _searchString = "";
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData()
+    {
+        _guests = await GuestService.GetAllAsync();
+        StateHasChanged();
+    }
+
+    private bool FilterFunc(Entity.Guest guest)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+        if (guest.FullName?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        if (guest.Email?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        if (guest.Phone?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        if (guest.Address?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) == true)
+            return true;
+        return false;
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<GuestDialog>("Register New Guest", options);
+        var result = await dialog.Result;
+        
+        if (result != null && !result.Canceled) 
+        {
+            await LoadData();
+        }
+    }
+}

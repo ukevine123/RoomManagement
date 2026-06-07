@@ -1,0 +1,106 @@
+@page "/rooms"
+@rendermode InteractiveServer
+@using Application.Services.RoomService
+@using Entity = Domain.Entities
+@using RoomManagement.Components.Dialogs
+
+@inject IRoomService RoomService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudGrid Class="align-center mb-3" Spacing="2">
+        <MudItem xs="12" sm="6" md="4">
+            <MudTextField @bind-Value="_searchString" 
+                           Placeholder="Search" 
+                           Adornment="Adornment.Start" 
+                           AdornmentIcon="@Icons.Material.Filled.Search" 
+                           IconSize="Size.Small" 
+                           Variant="Variant.Outlined" 
+                           Margin="Margin.Dense" 
+                           Class="bg-white" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="8" Class="d-flex justify-sm-end gap-2">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.FilterList" Size="Size.Small" Color="Color.Default">Filter</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Layers" Size="Size.Small" Color="Color.Default">Group by</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.FileDownload" Size="Size.Small" Color="Color.Default">Import</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" Size="Size.Small" Color="Color.Default">Refresh</MudButton>
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenCreateDialog">
+                Add New
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+
+    <MudTable Items="@_rooms" MultiSelection="true" Hover="true" Dense="true" Elevation="1" Class="rounded-lg">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entity.Room, object>(x => x.RoomCode)">Room Code</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entity.Room, object>(x => x.MaximumOccupancy)">Max Occupancy</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entity.Room, object>(x => x.RoomCategory != null ? x.RoomCategory.Name : string.Empty)">Category</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entity.Room, object>(x => x.RoomCategory != null ? x.RoomCategory.PricePerDay : 0)">Price per day</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entity.Room, object>(x => x.Status)">Status</MudTableSortLabel></MudTh>
+            <MudTh>Actions</MudTh>
+            <MudTh Style="width: 50px;"></MudTh> 
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Room Code">@context.RoomCode</MudTd>
+            <MudTd DataLabel="Max Occupancy">@context.MaximumOccupancy</MudTd>
+            <MudTd DataLabel="Category">@(context.RoomCategory?.Name ?? "None")</MudTd>
+            <MudTd DataLabel="Price per day" Class="font-weight-bold">@(context.RoomCategory?.PricePerDay.ToString("C") ?? "N/A")</MudTd>
+            <MudTd DataLabel="Status">
+                @if (context.Status == "Available")
+                {
+                    <MudChip T="string" Color="Color.Success" Variant="Variant.Text" Size="Size.Small" Style="background-color: #EBF5FF; color: #1E429F;" Class="px-3 py-1 rounded font-weight-bold">
+                        Available
+                    </MudChip>
+                }
+                else if (context.Status == "Occupied")
+                {
+                    <MudChip T="string" Color="Color.Error" Variant="Variant.Text" Size="Size.Small" Style="background-color: #FDF2F2; color: #9B1C1C;" Class="px-3 py-1 rounded font-weight-bold">
+                        Occupied
+                    </MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Warning" Variant="Variant.Text" Size="Size.Small" Style="background-color: #FEF08A; color: #854D0E;" Class="px-3 py-1 rounded font-weight-bold">
+                        @context.Status
+                    </MudChip>
+                }
+            </MudTd>
+            <MudTd>
+                <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" Size="Size.Small" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopRight">
+                    <MudMenuItem>View Details</MudMenuItem>
+                    <MudMenuItem>Edit</MudMenuItem>
+                    <MudMenuItem Style="color: var(--mud-palette-error);">Delete</MudMenuItem>
+                </MudMenu>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private List<Entity.Room> _rooms = new();
+    private string _searchString = "";
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData()
+    {
+        _rooms = await RoomService.GetAllAsync();
+        StateHasChanged();
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<RoomDialog>("Register New Room", options);
+        var result = await dialog.Result;
+        
+        if (result != null && !result.Canceled) 
+        {
+            await LoadData();
+        }
+    }
+}

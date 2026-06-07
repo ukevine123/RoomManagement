@@ -1,0 +1,121 @@
+@using Application.DTO
+@using Application.Services.GuestService
+@using Domain.Entities
+@inject IGuestService GuestService
+@inject ISnackbar Snackbar
+
+<MudDialog Style="max-width: 500px; width: 100%; border-radius: 12px;">
+    <TitleContent>
+        <div class="d-flex align-center justify-space-between width-100">
+            <MudText Typo="Typo.h6" Class="font-weight-bold">New Guest</MudText>
+            @* <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Medium" OnClick="Cancel" /> *@
+        </div>
+    </TitleContent>
+    
+    <DialogContent>
+        <MudForm @ref="_form" Class="d-flex flex-column gap-4 pt-2">
+            
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Full Name</MudText>
+                <MudTextField @bind-Value="Model.FullName" 
+                               Variant="Variant.Outlined" 
+                               Margin="Margin.Dense" 
+                               Placeholder="e.g., John Doe"
+                               FullWidth="true" />
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Email Address</MudText>
+                <MudTextField @bind-Value="Model.Email" 
+                               Variant="Variant.Outlined" 
+                               Margin="Margin.Dense" 
+                               Placeholder="e.g., john.doe@example.com"
+                               FullWidth="true" />
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Phone Number</MudText>
+                <MudTextField @bind-Value="Model.Phone" 
+                               Variant="Variant.Outlined" 
+                               Margin="Margin.Dense" 
+                               Placeholder="e.g., +250 788 ... ..."
+                               FullWidth="true" />
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Sex</MudText>
+                <MudSelect T="string" @bind-Value="Model.Sex" Variant="Variant.Outlined" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter" Placeholder="Select Sex">
+                    <MudSelectItem Value="@("Male")">Male</MudSelectItem>
+                    <MudSelectItem Value="@("Female")">Female</MudSelectItem>
+                    <MudSelectItem Value="@("Other")">Other</MudSelectItem>
+                </MudSelect>
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Address</MudText>
+                <MudTextField @bind-Value="Model.Address" 
+                               Variant="Variant.Outlined" 
+                               Margin="Margin.Dense" 
+                               Placeholder="e.g.Kigali, Rwanda"
+                               Lines="2"
+                               FullWidth="true" />
+            </div>
+
+        </MudForm>
+    </DialogContent>
+    
+    <DialogActions>
+        <div class="d-flex justify-end gap-3 width-100 pa-4 pt-0">
+            <MudButton Variant="Variant.Outlined" 
+                       OnClick="Cancel" 
+                       Style="text-transform: none; border-radius: 8px; border: 1px solid #E5E7EB; color: #1F2937;" 
+                       Class="px-5 font-weight-bold">
+                Cancel
+            </MudButton>
+            
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       OnClick="Submit" 
+                       Style="text-transform: none; border-radius: 8px; background-color: #e3a387;" 
+                       Class="px-5 font-weight-bold">
+                Create Guest
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public CreateGuestDTO Model { get; set; } = new() { Sex = "Male" };
+
+    private MudForm _form = default!;
+
+    private async Task Submit()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(Model.FullName))
+            {
+                Snackbar.Add("Full name is required.", Severity.Warning);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Model.Email))
+            {
+                Snackbar.Add("Email is required.", Severity.Warning);
+                return;
+            }
+
+            await GuestService.CreateGuestAsync(Model);
+            Snackbar.Add("Guest registered successfully!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving guest: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
