@@ -7,14 +7,28 @@
 @inject ISnackbar Snackbar
 
 <MudDialog Style="max-width: 500px; width: 100%; border-radius: 12px;">
-    <TitleContent>
+    @* <TitleContent>
         <div class="d-flex align-center justify-space-between width-100">
             <MudText Typo="Typo.h6" Class="font-weight-bold">New Room</MudText>
-            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Medium" OnClick="Cancel" />
+            @* <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Medium" OnClick="Cancel" /> 
         </div>
-    </TitleContent>
+    </TitleContent> *@
     
     <DialogContent>
+        <MudPaper Elevation="0" 
+                  Style="background: linear-gradient(135deg, #f79574f1 0%, #f09b7e 100%); padding:14px 18px; margin-bottom:16px;">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.MeetingRoom" Style="color:black; font-size:1.6rem;" />
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.subtitle1" Style="color:black; font-weight:700; line-height:1.2;">
+                        Register New Room
+                    </MudText>
+                    <MudText Typo="Typo.caption" Style="color:rgba(33, 33, 33, 0.9);">
+                        Add New Room
+                    </MudText>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
         <MudForm @ref="_form" Class="d-flex flex-column gap-4 pt-2">
             
             <div>
@@ -67,7 +81,7 @@
             <MudButton Variant="Variant.Filled" 
                        Color="Color.Primary" 
                        OnClick="Submit" 
-                       Style="text-transform: none; border-radius: 8px; background-color: #2563EB;" 
+                       Style="text-transform: none; border-radius: 8px; background-color: #e3a387;" 
                        Class="px-5 font-weight-bold">
                 Create Room
             </MudButton>

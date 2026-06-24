@@ -34,7 +34,7 @@
         </MudItem>
     </MudGrid>
 
-    <MudTable Items="@_guests" Filter="new Func<Entity.Guest, bool>(FilterFunc)" Hover="true" Dense="true" Elevation="1" Class="rounded-lg">
+    <MudTable Items="@_guests" Filter="new Func<Entity.Guest, bool>(FilterFunc)" Hover="true" Dense="true" Elevation="1" MultiSelection="true" Class="rounded-lg">
         <HeaderContent>
             <MudTh><MudTableSortLabel SortBy="new Func<Entity.Guest, object>(x => x.FullName)">Full Name</MudTableSortLabel></MudTh>
             <MudTh><MudTableSortLabel SortBy="new Func<Entity.Guest, object>(x => x.Email)">Email</MudTableSortLabel></MudTh>

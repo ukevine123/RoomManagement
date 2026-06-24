@@ -1,6 +1,8 @@
-namespace Domain.Entities
+using Domain.Entities;
+
+namespace Application.DTO
 {
-    public class Booking
+    public class CreateBookingDTO
     {
         public int Id { get; set; }
         public int RoomId { get; set; }

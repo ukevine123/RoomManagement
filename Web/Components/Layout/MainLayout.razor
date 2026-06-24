@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
 
 <MudThemeProvider Theme="@CustomTheme" IsDarkMode="@_isDarkMode" />
@@ -42,18 +42,18 @@
         <div class="app-main-body">
             @Body
         </div>
-        @* <MudFooter Class="app-footer-bar mud-elevation-2">
+        <footer class="mud-footer app-footer-bar mud-elevation-2">
             <MudContainer MaxWidth="MaxWidth.False" Class="py-3 px-4">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
                     <MudText Typo="Typo.body2" Color="Color.Inherit">
-                        &copy; @DateTime.UtcNow.Year PrimeBridge Financial Services. All rights reserved.
+                        &copy; @DateTime.UtcNow.Year Room Allocation Services. All rights reserved.
                     </MudText>
                     <MudText Typo="Typo.caption" Color="Color.Inherit" Style="opacity: 0.9;">
-                        Digital Loan Platform
+                        Room Management
                     </MudText>
                 </MudStack>
             </MudContainer>
-        </MudFooter> *@
+        </footer>
     </MudMainContent>
 </MudLayout>
 @code {

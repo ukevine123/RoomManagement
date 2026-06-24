@@ -3,6 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Application.Interface;
+using Application.Services.AllocationService;
+using Application.Services.PaymentService;
+using Application.Services.PaymentTypeService;
 using Infrastructure.Repositories;
 
 namespace Infrastructure.DependencyInjection
@@ -19,6 +22,11 @@ namespace Infrastructure.DependencyInjection
             services.AddScoped<IRoomCategory, RoomCategoryRepository>();
             services.AddScoped<IRoom, RoomRepository>();
             services.AddScoped<IGuest, GuestRepository>();
+            services.AddScoped<IBooking, BookingRepository>();
+            services.AddScoped<IAllocation, AllocationRepository>();
+            services.AddScoped<IPayment, PaymentRepository>();
+            services.AddScoped<IPaymentType, PaymentTypeRepository>();
+
 
             return services;
         }
