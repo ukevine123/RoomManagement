@@ -1,0 +1,78 @@
+@using Application.DTO
+@using Application.Interface
+@using Application.Services.PaymentTypeService
+@using Domain.Entities
+
+@inject IPaymentTypeService PaymentTypeService
+@inject ISnackbar Snackbar
+
+<MudDialog Style="max-width: 500px; width: 100%; border-radius: 12px;">
+    <TitleContent>
+        <div class="d-flex align-center justify-space-between width-100">
+            <MudText Typo="Typo.h6" Class="font-weight-bold">New Payment Type</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudForm @ref="_form" Class="d-flex flex-column gap-4 pt-2">
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Name</MudText>
+                <MudTextField @bind-Value="Model.Name"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Placeholder="e.g., Cash"
+                              FullWidth="true" />
+            </div>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <div class="d-flex justify-end gap-3 width-100 pa-4 pt-0">
+            <MudButton Variant="Variant.Outlined"
+                       OnClick="Cancel"
+                       Style="text-transform: none; border-radius: 8px; border: 1px solid #E5E7EB; color: #1F2937;"
+                       Class="px-5 font-weight-bold">
+                Cancel
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="Submit"
+                       Style="text-transform: none; border-radius: 8px; background-color: #e3a387;"
+                       Class="px-5 font-weight-bold">
+                Create Payment Type
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public CreatePaymentTypeDTO Model { get; set; } = new();
+
+    private MudForm _form = default!;
+
+    private async Task Submit()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(Model.Name))
+            {
+                Snackbar.Add("Please provide a valid payment type name.", Severity.Warning);
+                return;
+            }
+
+            await PaymentTypeService.CreatePaymentTypeAsync(Model);
+            Snackbar.Add("Payment type created successfully!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error creating payment type: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
+

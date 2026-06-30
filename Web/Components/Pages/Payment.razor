@@ -1,0 +1,96 @@
+@page "/payments"
+@rendermode InteractiveServer
+
+@using Application.Services.PaymentService
+@using Application.Interface
+@using Domain.Entities
+
+
+@using RoomManagement.Components.Dialogs
+
+
+@inject IPaymentService PaymentService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudGrid Class="align-center mb-3" Spacing="2">
+        <MudItem xs="12" sm="6" md="4">
+            <MudTextField @bind-Value="_searchString"
+                           Placeholder="Search"
+                           Adornment="Adornment.Start"
+                           AdornmentIcon="@Icons.Material.Filled.Search"
+                           IconSize="Size.Small"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Class="bg-white" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="8" Class="d-flex justify-sm-end gap-2">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" Size="Size.Small" Color="Color.Default" OnClick="LoadData">
+                Refresh
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenCreateDialog">
+                Add New
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+
+    <MudTable Items="@_payments" MultiSelection="true" Hover="true" Dense="true" Elevation="1" Class="rounded-lg">
+        <HeaderContent>
+            <MudTh>Payment Date</MudTh>
+            <MudTh>Payment Type</MudTh>
+            <MudTh>Amount Paid</MudTh>
+            <MudTh>Balance</MudTh>
+            <MudTh>Actions</MudTh>
+            <MudTh Style="width: 50px;"></MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd DataLabel="Payment Date">@context.PaymentDate.ToShortDateString()</MudTd>
+            <MudTd DataLabel="Payment Type">@(context.Name?.Name ?? "None")</MudTd>
+
+            <MudTd DataLabel="Amount Paid" Class="font-weight-bold">@context.AmountPaid.ToString("C")</MudTd>
+            <MudTd DataLabel="Balance">@context.Balance.ToString("C")</MudTd>
+
+
+            <MudTd>
+                <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" Size="Size.Small" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopRight">
+                    <MudMenuItem>View Details</MudMenuItem>
+                    <MudMenuItem>Edit</MudMenuItem>
+                    <MudMenuItem Style="color: var(--mud-palette-error);">Delete</MudMenuItem>
+                </MudMenu>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private List<Domain.Entities.Payment> _payments = new();
+    private string _searchString = "";
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData()
+    {
+        _payments = await PaymentService.GetAllAsync();
+        StateHasChanged();
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<PaymentDialog>("New Payment", options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+}
+

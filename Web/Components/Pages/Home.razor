@@ -1,7 +1,202 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+@using Application.Services.BookingService
+@using Application.Services.RoomService
+@using Application.Services.AllocationService
+@using Application.Interface
+@using Domain.Entities
 
-<PageTitle>Home</PageTitle>
+@inject IBookingService BookingService
+@inject IRoomService RoomService
+@inject IAllocationService AllocationService
 
-<h1>Hello, world!</h1>
+<PageTitle>Dashboard</PageTitle>
 
-Welcome to your new app.
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudStack Spacing="3">
+        <MudText Typo="Typo.h4" GutterBottom="false">Dashboard</MudText>
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="1" Class="h-100">
+                    <MudCardContent>
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Total Rooms</MudText>
+                        <MudText Typo="Typo.h3" Class="mt-1">@_roomsCount</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="1" Class="h-100">
+                    <MudCardContent>
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Total Bookings</MudText>
+                        <MudText Typo="Typo.h3" Class="mt-1">@_bookingsCount</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="1" Class="h-100">
+                    <MudCardContent>
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Total Allocations</MudText>
+                        <MudText Typo="Typo.h3" Class="mt-1">@_allocationsCount</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12" md="8">
+                <MudCard Elevation="1">
+                    <MudCardContent>
+                        <MudStack Spacing="2">
+                            <MudText Typo="Typo.subtitle1">Booking rate (monthly)</MudText>
+                            @* <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                Rate is calculated as bookings_in_month / days_in_month (Option A).
+                            </MudText> *@
+
+                            <MudGrid Spacing="2" Class="align-center">
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField @bind-Value="_selectedMonthText"
+                                                   Label="Select month (yyyy-MM)"
+                                                   Variant="Variant.Outlined" />
+                                </MudItem>
+                            </MudGrid>
+
+                            <MudStack Spacing="1">
+                                <MudText Typo="Typo.body2">
+                                    <b>@_bookingsInSelectedMonth</b> bookings in <b>@_daysInSelectedMonth</b> days (@_selectedMonth:MMM yyyy)
+                                </MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    Booking rate: <b>@_bookingRatePerDay.ToString("0.00")</b> bookings/day
+                                </MudText>
+
+                                <MudProgressLinear Color="Color.Primary" Value="@_bookingRatePercent" />
+                            </MudStack>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudCard Elevation="1">
+                    <MudCardContent>
+                        <MudStack Spacing="2">
+                            <MudText Typo="Typo.subtitle1">Notes</MudText>
+                            <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Dense="true">
+                                Monthly booking rate uses <b>CheckInDate</b> month/year.
+                            </MudAlert>
+
+                            <MudAlert Severity="Severity.Warning" Variant="Variant.Filled" Dense="true">
+                                This dashboard currently reads all rows using the existing services and calculates summaries in the UI.
+                            </MudAlert>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+
+        <MudCard Elevation="1">
+            <MudCardContent>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.subtitle1">Bookings by room (selected month)</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        (Not available until Booking->RoomCode navigation properties are confirmed.)
+                    </MudText>
+                </MudStack>
+            </MudCardContent>
+        </MudCard>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private int _roomsCount;
+    private int _bookingsCount;
+    private int _allocationsCount;
+
+    // Option A: bookings_in_month / days_in_month
+    private DateTime _selectedMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private string _selectedMonthText = $"{DateTime.Today:yyyy-MM}";
+    private int _daysInSelectedMonth;
+    private int _bookingsInSelectedMonth;
+    private double _bookingRatePerDay;
+
+    // Used only to drive the progress bar (scaled to a 0-100 range)
+    private double _bookingRatePercent;
+
+    private List<Booking> _allBookings = new();
+    private List<Room> _allRooms = new();
+    private List<Allocation> _allAllocations = new();
+
+    private void EnsureBookingRoomSectionNotUsed()
+    {
+        // Intentionally left empty.
+    }
+
+
+
+
+
+
+    private int _placeholder; // keeps file editor stable (no-op)
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllAsync();
+        Recalculate();
+    }
+
+    private async Task RefreshAsync()
+    {
+        await LoadAllAsync();
+        Recalculate();
+    }
+
+    private async Task LoadAllAsync()
+    {
+        _allRooms = await RoomService.GetAllAsync();
+        _allBookings = await BookingService.GetAllAsync();
+        _allocationsCount = 0;
+        var _tmpAllocations = await AllocationService.GetAllAsync();
+        _allocationsCount = _tmpAllocations.Count;
+
+        _roomsCount = _allRooms.Count;
+        _bookingsCount = _allBookings.Count;
+        _allocationsCount = _allAllocations.Count;
+    }
+
+    private void Recalculate()
+    {
+        var year = _selectedMonth.Year;
+        var month = _selectedMonth.Month;
+
+        _daysInSelectedMonth = DateTime.DaysInMonth(year, month);
+
+        _bookingsInSelectedMonth = _allBookings.Count(b =>
+            b.CheckInDate.Year == year &&
+            b.CheckInDate.Month == month);
+
+        _bookingRatePerDay = _daysInSelectedMonth <= 0
+            ? 0
+            : (double)_bookingsInSelectedMonth / _daysInSelectedMonth;
+
+        // Scale progress bar: assume typical rates rarely exceed ~1 booking/day.
+        // Cap visually at 1.5 bookings/day -> 100%.
+        var maxForProgress = 1.5;
+        _bookingRatePercent = Math.Clamp((_bookingRatePerDay / maxForProgress) * 100.0, 0, 100);
+
+        // Room breakdown intentionally omitted until Booking.RoomCode navigation is confirmed.
+
+
+        StateHasChanged();
+    }
+
+    private sealed class TopRoomBookingsRow
+    {
+        public int Rank { get; set; }
+        public string RoomCode { get; set; } = "-";
+        public string? RoomCategory { get; set; }
+        public int Bookings { get; set; }
+    }
+}
+

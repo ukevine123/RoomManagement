@@ -1,0 +1,151 @@
+@using Application.DTO
+@using Application.Interface
+@using Application.Services.PaymentService
+@using Application.Services.PaymentTypeService
+@using Domain.Entities
+
+@inject IPaymentService PaymentService
+@inject IPaymentTypeService PaymentTypeService
+@inject ISnackbar Snackbar
+
+<MudDialog Style="max-width: 600px; width: 100%; border-radius: 12px;">
+    <TitleContent>
+        <div class="d-flex align-center justify-space-between width-100">
+            <MudText Typo="Typo.h6" Class="font-weight-bold">New Payment</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudForm @ref="_form" Class="d-flex flex-column gap-4 pt-2">
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Booking Id</MudText>
+                <MudNumericField T="int" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  @bind-Value="Model.BookingId"
+                                  HideSpinButtons="true" />
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Payment Type</MudText>
+                <MudSelect T="int" @bind-Value="Model.PaymentTypeId" Variant="Variant.Outlined" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter" Placeholder="Select payment type">
+                    @foreach (var pt in _paymentTypes)
+                    {
+                        <MudSelectItem Value="@pt.Id">@pt.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Amount Paid</MudText>
+                <MudNumericField T="decimal" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  @bind-Value="Model.AmountPaid"
+                                  HideSpinButtons="true" />
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Balance</MudText>
+                <MudNumericField T="decimal" Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  @bind-Value="Model.Balance"
+                                  HideSpinButtons="true" />
+            </div>
+
+            <div>
+                <MudText Typo="Typo.body2" Class="text-secondary mb-1 font-weight-medium">Payment Date</MudText>
+                <MudDatePicker @bind-Date="PaymentDateBinding" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </div>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <div class="d-flex justify-end gap-3 width-100 pa-4 pt-0">
+            <MudButton Variant="Variant.Outlined"
+                       OnClick="Cancel"
+                       Style="text-transform: none; border-radius: 8px; border: 1px solid #E5E7EB; color: #1F2937;"
+                       Class="px-5 font-weight-bold">
+                Cancel
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="Submit"
+                       Style="text-transform: none; border-radius: 8px; background-color: #e3a387;"
+                       Class="px-5 font-weight-bold">
+                Create Payment
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] public IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public CreatePaymentDTO Model { get; set; } = new();
+
+    private MudForm _form = default!;
+    private List<PaymentType> _paymentTypes = new();
+
+    private DateTime? PaymentDateBinding
+    {
+        get => Model.PaymentDate == default ? null : Model.PaymentDate;
+        set => Model.PaymentDate = value ?? default;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _paymentTypes = await PaymentTypeService.GetAllAsync();
+        if (_paymentTypes.Any() && Model.PaymentTypeId == 0)
+            Model.PaymentTypeId = _paymentTypes.First().Id;
+
+        if (Model.PaymentDate == default)
+            Model.PaymentDate = DateTime.Now;
+    }
+
+    private async Task Submit()
+    {
+        try
+        {
+            if (Model.BookingId <= 0)
+            {
+                Snackbar.Add("Please provide a valid Booking Id.", Severity.Warning);
+                return;
+            }
+
+            if (Model.PaymentTypeId <= 0)
+            {
+                Snackbar.Add("Please select a payment type.", Severity.Warning);
+                return;
+            }
+
+            if (Model.AmountPaid <= 0)
+            {
+                Snackbar.Add("Amount paid must be greater than 0.", Severity.Warning);
+                return;
+            }
+
+            if (Model.Balance < 0)
+            {
+                Snackbar.Add("Balance cannot be negative.", Severity.Warning);
+                return;
+            }
+
+            if (Model.PaymentDate == default)
+            {
+                Snackbar.Add("Please select a payment date.", Severity.Warning);
+                return;
+            }
+
+            await PaymentService.CreatePaymentAsync(Model);
+            Snackbar.Add("Payment created successfully!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error creating payment: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
+
